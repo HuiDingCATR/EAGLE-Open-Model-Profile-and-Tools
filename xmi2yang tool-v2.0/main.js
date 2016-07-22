@@ -22,7 +22,11 @@ var xmlreader=require('xmlreader'),
     Type = require('./model/yang/type.js'),
     RPC=require('./model/yang/rpc.js'),
     Package = require('./model/yang/package.js'),
-    Augment = require('./model/yang/augment.js');
+    Augment = require('./model/yang/augment.js'),
+    Choice = require('./model/yang/choice.js'),
+    Case = require('./model/yang/case.js'),
+    Leaf = require('./model/yang/leaf.js');
+
 
 var Typedef=[];//The array of basic DataType and PrimitiveType
 var Class=[];//The array of objcet class
@@ -1281,6 +1285,7 @@ function createAssociation(obj) {
 }
 
 function obj2yang(ele){
+    var basicType = ["boolean", "integer", "real", "string", "unlimitedNatural"];
     for(var t=0;t<yangModule.length;t++){
         for(var j = 0; j < packages.length; j++){
             if(packages[j].path == "" && yangModule[t].fileName == packages[j].fileName){
@@ -1444,6 +1449,47 @@ function obj2yang(ele){
                     for(var k=0;k<Class.length;k++){
                         if(Class[k].id==name){
                             ele[i].attribute[j].isAbstract=Class[k].isAbstract;
+                            if(ele[i].attribute[j].isAbstract){
+                                for(var m = 0; m < generalization.length; m++){
+                                    if(generalization[m].class2.id == Class[k].id && generalization[m].class1.isAbstract == false){
+                                        var choice = new Choice("RealSubClasses");
+                                        break;
+                                    }
+                                }
+                                if(choice != undefined){
+                                    var idList = [];
+                                    //for(var m = 0; m < generalization.length; m++){
+                                        inheritGen(Class[k].id);
+                                        /*if(generalization[m].class2.id == Class[k].id && generalization[m].class1.isAbstract == false){
+                                            if(idList.indexOf(generalization[m].class1.id) == -1){
+                                                var case_ = new Case(generalization[m].class1.name, generalization[m].class1.id);
+                                                var leaf = new Leaf(generalization[m].class1.name);
+                                                idList.push(generalization[m].class1.id);
+                                                inheritGen(generalization[m].class1.id);
+                                                choice.children.push(case_);
+                                            }
+
+                                        }*/
+                                    //}
+                                    function inheritGen(ID) {
+                                        for(var n = 0; n < generalization.length; n++){
+                                            if(generalization[n].class2.id == ID && generalization[n].class1.isAbstract == false){
+                                                if(idList.indexOf(generalization[n].class1.id) == -1){
+                                                    var case_ = new Case(generalization[n].class1.name, generalization[n].class1.id);
+                                                    var type = new Type("leafref", "","path '/"+generalization[n].class1.instancePath+ "'", "", "", "", "");
+                                                    var leafNode = new Leaf(generalization[n].class1.name, "", "", "", "",type);
+                                                    case_.children.push(leafNode);
+                                                    idList.push(generalization[n].class1.id);
+                                                    inheritGen(generalization[n].class1.id);
+                                                    choice.children.push(case_);
+                                                }
+
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
                             if(Class[k].type!=="Class"){
                                 ele[i].attribute[j].isleafRef=false;
                                 ele[i].attribute[j].isGrouping=true;
@@ -1453,18 +1499,18 @@ function obj2yang(ele){
                             ele[i].attribute[j].keyid=Class[k].keyid;
 
                             if(i==k){
-                                var pathArray = Class[k].instancePath.split('/');
+                                /*var pathArray = Class[k].instancePath.split('/');
                                 for(var m = 0; m < pathArray.length; m++){
                                     if(pathArray[m].split(':')[0] == ele[i].fileName.split('.')[0]){
                                         pathArray[m] = pathArray[m].split(':')[1];
-                                    }/*else{
+                                    }/!*else{
                                      break;
-                                     }*/
+                                     }*!/
                                 }
-                                var path = pathArray.join('/');
+                                var path = pathArray.join('/');*/
 
 
-                                ele[i].attribute[j].type="leafref+path '/"+path+"'";
+                                ele[i].attribute[j].type="leafref+path '/"+Class[k].instancePath+"'";
                                 if(Class[k].isAbstract){
                                     ele[i].attribute[j].type="string";
                                 }
@@ -1482,17 +1528,17 @@ function obj2yang(ele){
                                     /*if(ele[i].fileName.split(".")[0] == p){
                                         ele[i].attribute[j].type="leafref+path '/"+Class[k].instancePath.split(":")[1]+"'";
                                     }else{*/
-                                    var pathArray = Class[k].instancePath.split('/');
+                                    /*var pathArray = Class[k].instancePath.split('/');
                                     for(var m = 0; m < pathArray.length; m++){
                                         if(pathArray[m].split(':')[0] == ele[i].fileName.split('.')[0]){
                                             pathArray[m] = pathArray[m].split(':')[1];
-                                        }/*else{
+                                        }/!*else{
                                             break;
-                                        }*/
+                                        }*!/
                                     }
-                                    var path = pathArray.join('/');
+                                    var path = pathArray.join('/');*/
 
-                                    ele[i].attribute[j].type="leafref+path '/" + path +"'";
+                                    ele[i].attribute[j].type="leafref+path '/" + Class[k].instancePath +"'";
                                     //add element "import" to module
                                     /*for (var t = 0; t < yangModule.length; t++) {
                                         if (ele[i].fileName == yangModule[t].fileName) {
@@ -1574,9 +1620,13 @@ function obj2yang(ele){
                 }
                 if(ele[i].attribute[j].isSpecTarget == false && ele[i].attribute[j].isSpecReference == false){
                     obj.buildChild(ele[i].attribute[j], ele[i].attribute[j].nodeType);//create the subnode to obj
-                }/*else{
-                    obj.children.push("");
-                }*/
+                    if(choice != undefined){
+                        if(obj.children[obj.children.length - 1].children){
+                            obj.children[obj.children.length - 1].children.push(choice);
+                            choice = undefined;
+                        }
+                    }
+                }
             }
         }
         //create the object of "typedef"

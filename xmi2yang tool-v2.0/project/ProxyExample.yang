@@ -1,0 +1,88 @@
+module ProxyExample {
+    namespace "urn:onf:params:xml:ns:yang:ProxyExample";
+    prefix ProxyExample;
+    organization "ONF (Open Networking Foundation) IMP Working Group";
+    contact "WG Web: <https://www.opennetworking.org/technical-communities/areas/services/>
+        WG List: <mailto: <wg list name>@opennetworking.org>
+        WG Chair: your-WG-chair
+                <mailto:your-WG-chair@example.com>
+        Editor: your-name
+                <mailto:your-email@example.com>";
+    description "none";
+    revision 2016-07-22 {
+        description "Latest revision";
+        reference "RFC 6020 and RFC 6087";
+    }
+    grouping AbstractProxySuperClass {
+        leaf key {
+            type string;
+            description "none";
+        }
+        description "none";
+    }
+    container GroupingClass {
+        list _containedRealSubClassList {
+            key 'key';
+            choice RealSubClasses {
+                case RealSubClass3 {
+                    leaf RealSubClass3 {
+                        type leafref {
+                            path '/ProxyExample:RealSubClass3/ProxyExample:key';
+                        }
+                        config false;
+                        description "none";
+                    }
+                }
+                case RealSubClass1 {
+                    leaf RealSubClass1 {
+                        type leafref {
+                            path '/ProxyExample:RealSubClass1/ProxyExample:key';
+                        }
+                        config false;
+                        description "none";
+                    }
+                }
+                case RealSubClass2 {
+                    leaf RealSubClass2 {
+                        type leafref {
+                            path '/ProxyExample:RealSubClass2/ProxyExample:key';
+                        }
+                        config false;
+                        description "none";
+                    }
+                }
+            }
+            uses AbstractProxySuperClass;
+            description "none";
+        }
+        leaf key {
+            type string;
+            description "none";
+        }
+        description "none";
+    }
+    list RealSubClass1 {
+        key 'key';
+        uses RealSubClass1;
+        description "none";
+    }
+    grouping RealSubClass1 {
+        uses AbstractProxySuperClass;
+        description "none";
+    }
+    list RealSubClass2 {
+        key 'key';
+        uses RealSubClass2;
+        description "none";
+    }
+    grouping RealSubClass2 {
+        uses AbstractProxySuperClass;
+        description "none";
+    }
+    list RealSubClass3 {
+        key 'key';
+        uses RealSubClass2;
+        uses RealSubClass1;
+        description "none";
+    }
+}
